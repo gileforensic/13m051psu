@@ -20,7 +20,7 @@ float rk_h,rk_h_over6;
 float V_param=4.0f,Sf_param=10.0f,Y_param=0.5f,muMax_param=1.0f,K1_param=0.03f,K2_param=0.51f;
 int V_intparam=(int)(V_param*float_to_int),Sf_intparam=(int)(Sf_param*float_to_int),Y_intparam=(int)(Y_param*float_to_int);
 int muMax_intparam=(int)(muMax_param*float_to_int),K1_intparam=(int)(K1_param*float_to_int),K2_intparam=(int)(K2_param*float_to_int);
-int V_param_index,Sf_param_index,Y_param_index,muMax_param_index,K1_param_index,K2_param_index;
+int V_param_index,Sf_param_index,Y_param_index,muMax_param_index,K1_param_index,K2_param_index,sample_time_param_index;
 
 #define DEF_PARAM_MACRO(indexvar,param_name,def_value) if(!param_active[i]){\
                                                          param_active[i]=true;\
@@ -55,6 +55,7 @@ void sim_param_init(){
     DEF_PARAM_MACRO(muMax_param_index,"CSTR mu_max[h^-1] *1e3",muMax_intparam)
     DEF_PARAM_MACRO(K1_param_index,"CSTR K1[g/l] *1e3",V_intparam)
     DEF_PARAM_MACRO(K2_param_index,"CSTR K2[l/g] *1e3",V_intparam)
+    DEF_PARAM_MACRO(sample_time_param_index,"Sample time in ms",sample_time_param_index)
     
     if(!all_ok){
       Serial.println("Param Init failed.");
@@ -65,8 +66,24 @@ void sim_param_init(){
 
 }
 
+#define speed_up
+#ifdef speed_up
+#define time_scaling 60000
+#else
+#define time_scaling 1
+#endif
 
 void getParams(){
+  If (param[sample_time_param_index] != sample_time)
+  {
+    sample_time = param[sample_time_param_index];
+    //stop calling ticker callback
+    //with old sample time
+    //start calling with new sample time
+    TickSampler.detach();
+    TickSampler.attach_ms(sample_time/time_scaling, timeElapsed);
+    
+  }
 //init params did not error    
   KU_param=(float)(((double)((KU_intparam=param[KU_param_index])*int_to_float);
   BU_param=(float)(((double)((BU_intparam=param[BU_param_index])*int_to_float);
